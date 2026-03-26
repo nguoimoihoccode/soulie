@@ -12,6 +12,58 @@ final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 class AppRouter {
   AppRouter._();
 
+  static const String widgetHost = 'open';
+  static const String widgetHomeHost = 'home';
+  static const String widgetFriendsHost = 'friends';
+  static const String widgetCameraHost = 'camera';
+  static const String widgetMessagesHost = 'messages';
+  static const String widgetProfileHost = 'profile';
+  static const String widgetChatHost = 'chat';
+
+  static String routeForWidgetUri(Uri? uri) {
+    if (uri == null) {
+      return '/main?page=0';
+    }
+
+    if (uri.host == widgetProfileHost) {
+      return '/main/profile';
+    }
+
+    if (uri.host == widgetChatHost) {
+      final friendKey = uri.queryParameters['friendKey'];
+      final name = uri.queryParameters['name'];
+      if (friendKey != null && friendKey.isNotEmpty) {
+        final chatUri = Uri(
+          path: '/main/chat/$friendKey',
+          queryParameters: {if (name != null && name.isNotEmpty) 'name': name},
+        );
+        return chatUri.toString();
+      }
+
+      return '/main?page=3';
+    }
+
+    if (uri.host == widgetFriendsHost) {
+      return '/main?page=1';
+    }
+
+    if (uri.host == widgetCameraHost) {
+      return '/main?page=2';
+    }
+
+    if (uri.host == widgetMessagesHost) {
+      return '/main?page=3';
+    }
+
+    if (uri.host == widgetHost ||
+        uri.host == widgetHomeHost ||
+        uri.host.isEmpty) {
+      return '/main?page=0';
+    }
+
+    return '/main?page=0';
+  }
+
   static GoRouter router(AuthBloc authBloc) {
     return GoRouter(
       navigatorKey: _rootNavigatorKey,
@@ -40,7 +92,11 @@ class AppRouter {
         GoRoute(
           path: '/main',
           name: 'main',
-          builder: (context, state) => const MainPage(),
+          builder: (context, state) {
+            final initialPage =
+                int.tryParse(state.uri.queryParameters['page'] ?? '') ?? 2;
+            return MainPage(initialPage: initialPage);
+          },
           routes: [
             GoRoute(
               path: 'profile',

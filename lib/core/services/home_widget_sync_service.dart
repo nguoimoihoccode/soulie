@@ -9,8 +9,16 @@ import '../../features/home/presentation/widgets/home_widget_preview.dart';
 class HomeWidgetSyncService {
   const HomeWidgetSyncService();
 
+  static const String iOSAppGroupId = 'group.com.soulie.soulie';
   static const String androidProviderName = 'SoulieHomeWidgetProvider';
+  static const String iOSWidgetName = 'SoulieHomeWidget';
   static const String imageKey = 'soulie_widget_image';
+
+  Future<void> configure() async {
+    if (Platform.isIOS) {
+      await HomeWidget.setAppGroupId(iOSAppGroupId);
+    }
+  }
 
   Future<void> syncHome(HomeState state) async {
     if (!_isSupportedPlatform) {
@@ -61,6 +69,7 @@ class HomeWidgetSyncService {
     await HomeWidget.updateWidget(
       name: androidProviderName,
       androidName: androidProviderName,
+      iOSName: iOSWidgetName,
     );
   }
 

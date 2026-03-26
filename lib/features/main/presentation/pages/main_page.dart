@@ -8,7 +8,9 @@ import '../widgets/camera_history_page.dart';
 /// Horizontal: Home ← Friends ← Camera → Messages
 /// Vertical (on Camera): swipe DOWN → History
 class MainPage extends StatefulWidget {
-  const MainPage({super.key});
+  const MainPage({super.key, this.initialPage = 2});
+
+  final int initialPage;
 
   @override
   State<MainPage> createState() => _MainPageState();
@@ -16,12 +18,13 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   late final PageController _pageController;
-  int _currentPage = 2; // Start at Camera (center)
+  late int _currentPage;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: 2);
+    _currentPage = widget.initialPage.clamp(0, 3);
+    _pageController = PageController(initialPage: _currentPage);
   }
 
   @override

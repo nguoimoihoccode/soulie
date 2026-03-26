@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:home_widget/home_widget.dart';
 import 'core/router/app_router.dart';
 import 'core/services/home_widget_sync_service.dart';
 import 'core/theme/app_theme.dart';
@@ -9,8 +11,10 @@ import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/soulie/data/soulie_repository.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  const homeWidgetSyncService = HomeWidgetSyncService();
+  await homeWidgetSyncService.configure();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -18,14 +22,20 @@ void main() {
       systemNavigationBarColor: Color(0xFF0C0810),
     ),
   );
-  runApp(SoulieApp());
+  runApp(SoulieApp(homeWidgetSyncService: homeWidgetSyncService));
 }
 
 class SoulieApp extends StatelessWidget {
-  SoulieApp({super.key, AuthRepository? authRepository})
-    : _authRepository = authRepository ?? AuthRepository();
+  SoulieApp({
+    super.key,
+    AuthRepository? authRepository,
+    HomeWidgetSyncService? homeWidgetSyncService,
+  }) : _authRepository = authRepository ?? AuthRepository(),
+       _homeWidgetSyncService =
+           homeWidgetSyncService ?? const HomeWidgetSyncService();
 
   final AuthRepository _authRepository;
+  final HomeWidgetSyncService _homeWidgetSyncService;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +43,7 @@ class SoulieApp extends StatelessWidget {
       providers: [
         RepositoryProvider<AuthRepository>.value(value: _authRepository),
         RepositoryProvider<HomeWidgetSyncService>(
-          create: (_) => const HomeWidgetSyncService(),
+          create: (_) => _homeWidgetSyncService,
         ),
         RepositoryProvider<SoulieRepository>(
           create: (_) => SoulieRepository(authRepository: _authRepository),
@@ -49,18 +59,56 @@ class SoulieApp extends StatelessWidget {
   }
 }
 
-class _SoulieAppView extends StatelessWidget {
+class _SoulieAppView extends StatefulWidget {
   const _SoulieAppView();
 
   @override
-  Widget build(BuildContext context) {
-    final authBloc = context.read<AuthBloc>();
+  State<_SoulieAppView> createState() => _SoulieAppViewState();
+}
 
-    return MaterialApp.router(
-      title: 'Soulie',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      routerConfig: AppRouter.router(authBloc),
+class _SoulieAppViewState extends State<_SoulieAppView> {
+  GoRouter? _router;
+  Stream<Uri?>? _widgetClickStream;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final authBloc = context.read<AuthBloc>();
+    _router ??= AppRouter.router(authBloc);
+    _widgetClickStream ??= HomeWidget.widgetClicked;
+  }
+
+  void _handleWidgetClick(Uri? uri) {
+    final router = _router;
+    if (router == null) {
+      return;
+    }
+
+    router.go(AppRouter.routeForWidgetUri(uri));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final router = _router!;
+
+    return StreamBuilder<Uri?>(
+      stream: _widgetClickStream,
+      builder: (context, snapshot) {
+        final clickedUri = snapshot.data;
+        if (clickedUri != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _handleWidgetClick(clickedUri);
+          });
+        }
+
+        return MaterialApp.router(
+          title: 'Soulie',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.darkTheme,
+          routerConfig: router,
+        );
+      },
     );
   }
 }
