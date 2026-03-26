@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../soulie/data/soulie_repository.dart';
 import '../bloc/journal_bloc.dart';
 import '../bloc/journal_event.dart';
 import '../bloc/journal_state.dart';
@@ -11,14 +12,31 @@ class JournalPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => JournalBloc()..add(const JournalLoadRequested()),
+      create: (_) => JournalBloc(
+        soulieRepository: context.read<SoulieRepository>(),
+      )..add(const JournalLoadRequested()),
       child: const _JournalView(),
     );
   }
 }
 
-class _JournalView extends StatelessWidget {
+class _JournalView extends StatefulWidget {
   const _JournalView();
+
+  @override
+  State<_JournalView> createState() => _JournalViewState();
+}
+
+class _JournalViewState extends State<_JournalView> {
+  String? _lastOpenedMomentId;
+
+  void _markOpenedIfNeeded(String momentId) {
+    if (_lastOpenedMomentId == momentId) {
+      return;
+    }
+    _lastOpenedMomentId = momentId;
+    context.read<SoulieRepository>().markMomentOpened(momentId).catchError((_) {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,9 +50,28 @@ class _JournalView extends StatelessWidget {
             );
           }
 
+          if (state.status == JournalStatus.error) {
+            return Center(
+              child: Text(
+                state.errorMessage ?? 'Không thể tải lịch sử',
+                style: TextStyle(
+                  color: AppColors.textTertiary.withValues(alpha: 0.8),
+                ),
+              ),
+            );
+          }
+
           final entries = state.selectedTab == 0
               ? state.sentEntries
               : state.receivedEntries;
+
+          if (state.selectedTab == 1 && entries.isNotEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _markOpenedIfNeeded(entries.first.id);
+              }
+            });
+          }
 
           if (entries.isEmpty) {
             return Center(
@@ -63,6 +100,11 @@ class _JournalView extends StatelessWidget {
               PageView.builder(
                 scrollDirection: Axis.vertical,
                 itemCount: entries.length,
+                onPageChanged: (index) {
+                  if (state.selectedTab == 1 && index < entries.length) {
+                    _markOpenedIfNeeded(entries[index].id);
+                  }
+                },
                 itemBuilder: (context, index) {
                   return _LocketHistoryEntry(
                     entry: entries[index],

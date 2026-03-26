@@ -14,6 +14,15 @@ class CameraCaptureTapped extends CameraEvent {
   const CameraCaptureTapped();
 }
 
+class CameraRecipientSelected extends CameraEvent {
+  final String recipientId;
+
+  const CameraRecipientSelected(this.recipientId);
+
+  @override
+  List<Object?> get props => [recipientId];
+}
+
 class CameraFlipTapped extends CameraEvent {
   const CameraFlipTapped();
 }

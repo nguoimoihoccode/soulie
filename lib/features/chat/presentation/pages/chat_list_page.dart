@@ -1,9 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../soulie/data/soulie_repository.dart';
+import '../bloc/chat_list_bloc.dart';
+import '../bloc/chat_list_event.dart';
+import '../bloc/chat_list_state.dart';
 
 class ChatListPage extends StatelessWidget {
   const ChatListPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => ChatListBloc(
+        soulieRepository: context.read<SoulieRepository>(),
+      )..add(const ChatListLoadRequested()),
+      child: const _ChatListView(),
+    );
+  }
+}
+
+class _ChatListView extends StatelessWidget {
+  const _ChatListView();
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +76,9 @@ class ChatListPage extends StatelessWidget {
                   border: Border.all(color: AppColors.cardBorder, width: 0.5),
                 ),
                 child: TextField(
+                  onChanged: (value) => context.read<ChatListBloc>().add(
+                    ChatListSearchChanged(value),
+                  ),
                   style:
                       const TextStyle(color: AppColors.textPrimary, fontSize: 14),
                   decoration: InputDecoration(
@@ -80,14 +102,41 @@ class ChatListPage extends StatelessWidget {
 
             // Chat list
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: _mockChats.length,
-                itemBuilder: (context, index) {
-                  final chat = _mockChats[index];
-                  return _ChatListItem(
-                    chat: chat,
-                    onTap: () => context.push('/main/chat/${chat.name}'),
+              child: BlocBuilder<ChatListBloc, ChatListState>(
+                builder: (context, state) {
+                  if (state.status == ChatListStatus.loading &&
+                      state.chats.isEmpty) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: AppColors.primary),
+                    );
+                  }
+
+                  if (state.status == ChatListStatus.error &&
+                      state.chats.isEmpty) {
+                    return Center(
+                      child: Text(
+                        state.errorMessage ?? 'Không thể tải danh sách tin nhắn',
+                        style: TextStyle(
+                          color: AppColors.textTertiary.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: state.chats.length,
+                    itemBuilder: (context, index) {
+                      final chat = state.chats[index];
+                      return _ChatListItem(
+                        chat: chat,
+                        onTap: () => context.pushNamed(
+                          'chat',
+                          pathParameters: {'friendKey': chat.friendId},
+                          queryParameters: {'name': chat.friendName},
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -99,81 +148,8 @@ class ChatListPage extends StatelessWidget {
   }
 }
 
-class _ChatData {
-  final String name;
-  final String lastMessage;
-  final String time;
-  final bool isOnline;
-  final int unread;
-  final bool isPhoto;
-
-  const _ChatData({
-    required this.name,
-    required this.lastMessage,
-    required this.time,
-    this.isOnline = false,
-    this.unread = 0,
-    this.isPhoto = false,
-  });
-}
-
-final _mockChats = [
-  const _ChatData(
-    name: 'Sarah Chen',
-    lastMessage: 'Sent a photo',
-    time: '2m',
-    isOnline: true,
-    unread: 2,
-    isPhoto: true,
-  ),
-  const _ChatData(
-    name: 'Alex Rivera',
-    lastMessage: 'Omg that\'s amazing! 🔥',
-    time: '15m',
-    isOnline: true,
-    unread: 1,
-  ),
-  const _ChatData(
-    name: 'Luna Skye',
-    lastMessage: 'Miss you 💕',
-    time: '1h',
-    isOnline: false,
-  ),
-  const _ChatData(
-    name: 'Marcus V.',
-    lastMessage: 'Sent a photo',
-    time: '2h',
-    isOnline: false,
-    isPhoto: true,
-  ),
-  const _ChatData(
-    name: 'Jordan Day',
-    lastMessage: 'See you tomorrow!',
-    time: '3h',
-    isOnline: true,
-  ),
-  const _ChatData(
-    name: 'Chris Kim',
-    lastMessage: '👏👏👏',
-    time: '5h',
-    isOnline: false,
-  ),
-  const _ChatData(
-    name: 'Elena Rose',
-    lastMessage: 'That looks so good',
-    time: '8h',
-    isOnline: false,
-  ),
-  const _ChatData(
-    name: 'Riley Cooper',
-    lastMessage: 'Haha thanks!',
-    time: '1d',
-    isOnline: false,
-  ),
-];
-
 class _ChatListItem extends StatelessWidget {
-  final _ChatData chat;
+  final ChatPreview chat;
   final VoidCallback onTap;
 
   const _ChatListItem({required this.chat, required this.onTap});
@@ -187,7 +163,7 @@ class _ChatListItem extends StatelessWidget {
       AppColors.accentOrange,
       AppColors.accentRose,
     ];
-    final color = colors[chat.name.hashCode.abs() % colors.length];
+    final color = colors[chat.friendName.hashCode.abs() % colors.length];
 
     return GestureDetector(
       onTap: onTap,
@@ -209,7 +185,7 @@ class _ChatListItem extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      chat.name[0],
+                      chat.friendName[0],
                       style: TextStyle(
                         color: color,
                         fontSize: 20,
@@ -245,7 +221,7 @@ class _ChatListItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    chat.name,
+                    chat.friendName,
                     style: TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 15,

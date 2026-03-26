@@ -48,12 +48,17 @@ class AppRouter {
               builder: (context, state) => const ProfilePage(),
             ),
             GoRoute(
-              path: 'chat/:friendName',
+              path: 'chat/:friendKey',
               name: 'chat',
               builder: (context, state) {
-                final friendName =
-                    state.pathParameters['friendName'] ?? 'Unknown';
-                return ChatPage(friendName: friendName);
+                final friendKey =
+                    state.pathParameters['friendKey'] ?? 'unknown';
+                final initialFriendName =
+                    state.uri.queryParameters['name'] ?? 'Unknown';
+                return ChatPage(
+                  friendKey: friendKey,
+                  initialFriendName: initialFriendName,
+                );
               },
             ),
           ],

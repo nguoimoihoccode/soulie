@@ -4,8 +4,13 @@ import '../bloc/home_state.dart';
 
 class FriendsGridSection extends StatelessWidget {
   final List<FriendWidget> friends;
+  final ValueChanged<FriendWidget>? onFriendTap;
 
-  const FriendsGridSection({super.key, required this.friends});
+  const FriendsGridSection({
+    super.key,
+    required this.friends,
+    this.onFriendTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +43,12 @@ class FriendsGridSection extends StatelessWidget {
           ),
           itemCount: friends.length,
           itemBuilder: (context, index) {
-            return _FriendGridItem(friend: friends[index]);
+            return _FriendGridItem(
+              friend: friends[index],
+              onTap: onFriendTap == null
+                  ? null
+                  : () => onFriendTap!(friends[index]),
+            );
           },
         ),
       ],
@@ -48,8 +58,9 @@ class FriendsGridSection extends StatelessWidget {
 
 class _FriendGridItem extends StatelessWidget {
   final FriendWidget friend;
+  final VoidCallback? onTap;
 
-  const _FriendGridItem({required this.friend});
+  const _FriendGridItem({required this.friend, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -63,15 +74,17 @@ class _FriendGridItem extends StatelessWidget {
     ];
     final colorIndex = friend.name.hashCode.abs() % colors.length;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.cardDark,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.cardBorder, width: 0.5),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.cardDark,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.cardBorder, width: 0.5),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
           Stack(
             children: [
               Container(
@@ -122,7 +135,8 @@ class _FriendGridItem extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

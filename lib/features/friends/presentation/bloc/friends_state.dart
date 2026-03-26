@@ -34,18 +34,22 @@ class FriendsState extends Equatable {
 }
 
 class Friend extends Equatable {
+  final String id;
   final String name;
   final String username;
   final String status;
   final bool isOnline;
+  final String avatarUrl;
 
   const Friend({
+    required this.id,
     required this.name,
     required this.username,
     required this.status,
     this.isOnline = false,
+    this.avatarUrl = '',
   });
 
   @override
-  List<Object?> get props => [name, username, status, isOnline];
+  List<Object?> get props => [id, name, username, status, isOnline, avatarUrl];
 }

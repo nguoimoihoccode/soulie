@@ -1,27 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../soulie/data/soulie_repository.dart';
 import '../bloc/chat_bloc.dart';
 import '../bloc/chat_event.dart';
 import '../bloc/chat_state.dart';
 
 class ChatPage extends StatelessWidget {
-  final String friendName;
+  final String friendKey;
+  final String initialFriendName;
 
-  const ChatPage({super.key, required this.friendName});
+  const ChatPage({
+    super.key,
+    required this.friendKey,
+    required this.initialFriendName,
+  });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ChatBloc()..add(ChatLoadRequested(friendName)),
-      child: _ChatView(friendName: friendName),
+      create: (_) => ChatBloc(
+        soulieRepository: context.read<SoulieRepository>(),
+      )..add(
+        ChatLoadRequested(
+          friendKey,
+          initialFriendName: initialFriendName,
+        ),
+      ),
+      child: _ChatView(initialFriendName: initialFriendName),
     );
   }
 }
 
 class _ChatView extends StatefulWidget {
-  final String friendName;
-  const _ChatView({required this.friendName});
+  final String initialFriendName;
+  const _ChatView({required this.initialFriendName});
 
   @override
   State<_ChatView> createState() => _ChatViewState();
@@ -56,14 +70,17 @@ class _ChatViewState extends State<_ChatView> {
 
   @override
   Widget build(BuildContext context) {
+    final chatState = context.watch<ChatBloc>().state;
+    final displayName = chatState.friendName.isNotEmpty
+        ? chatState.friendName
+        : widget.initialFriendName;
     final colors = [
       AppColors.primary,
       AppColors.accentPink,
       AppColors.accentCyan,
       AppColors.accentPurple,
     ];
-    final friendColor =
-        colors[widget.friendName.hashCode.abs() % colors.length];
+    final friendColor = colors[displayName.hashCode.abs() % colors.length];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -85,7 +102,7 @@ class _ChatViewState extends State<_ChatView> {
               ),
               child: Center(
                 child: Text(
-                  widget.friendName[0],
+                  displayName.isNotEmpty ? displayName[0] : '?',
                   style: TextStyle(
                     color: friendColor,
                     fontSize: 16,
@@ -99,14 +116,16 @@ class _ChatViewState extends State<_ChatView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.friendName,
+                  displayName,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
-                  'Active now',
+                  chatState.friendStatus.isNotEmpty
+                      ? chatState.friendStatus
+                      : 'Active now',
                   style: TextStyle(
                     color: AppColors.primary,
                     fontSize: 11,
@@ -119,7 +138,7 @@ class _ChatViewState extends State<_ChatView> {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () => context.go('/main'),
             icon: const Icon(Icons.photo_camera_outlined, size: 22),
           ),
         ],
@@ -137,6 +156,17 @@ class _ChatViewState extends State<_ChatView> {
                   );
                 }
 
+                if (state.status == ChatStatus.error && state.messages.isEmpty) {
+                  return Center(
+                    child: Text(
+                      state.errorMessage ?? 'Không thể tải cuộc trò chuyện',
+                      style: TextStyle(
+                        color: AppColors.textTertiary.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  );
+                }
+
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -146,7 +176,7 @@ class _ChatViewState extends State<_ChatView> {
                     return _MessageBubble(
                       message: msg,
                       friendColor: friendColor,
-                      friendName: widget.friendName,
+                      friendName: displayName,
                     );
                   },
                 );
@@ -173,7 +203,7 @@ class _ChatViewState extends State<_ChatView> {
               children: [
                 // Camera button
                 GestureDetector(
-                  onTap: () {},
+                  onTap: () => context.go('/main'),
                   child: Container(
                     width: 40,
                     height: 40,

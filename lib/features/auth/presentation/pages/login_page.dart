@@ -17,6 +17,7 @@ class _LoginPageState extends State<LoginPage>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isSignUp = false;
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
@@ -120,7 +121,9 @@ class _LoginPageState extends State<LoginPage>
                     const SizedBox(height: 8),
                     Center(
                       child: Text(
-                        'Share moments with people you love',
+                        _isSignUp
+                            ? 'Create your account to start sharing moments'
+                            : 'Share moments with people you love',
                         style: TextStyle(
                           color: AppColors.textTertiary,
                           fontSize: 15,
@@ -164,20 +167,21 @@ class _LoginPageState extends State<LoginPage>
                     const SizedBox(height: 12),
 
                     // Forgot password
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {},
-                        child: const Text(
-                          'Forgot Password?',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                    if (!_isSignUp)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {},
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
-                    ),
                     const SizedBox(height: 24),
 
                     // Login button
@@ -188,12 +192,22 @@ class _LoginPageState extends State<LoginPage>
                           onTap: isLoading
                               ? null
                               : () {
-                                  context.read<AuthBloc>().add(
-                                        AuthLoginRequested(
-                                          email: _emailController.text.trim(),
-                                          password: _passwordController.text,
-                                        ),
-                                      );
+                                  final authBloc = context.read<AuthBloc>();
+                                  if (_isSignUp) {
+                                    authBloc.add(
+                                      AuthRegisterRequested(
+                                        email: _emailController.text.trim(),
+                                        password: _passwordController.text,
+                                      ),
+                                    );
+                                  } else {
+                                    authBloc.add(
+                                      AuthLoginRequested(
+                                        email: _emailController.text.trim(),
+                                        password: _passwordController.text,
+                                      ),
+                                    );
+                                  }
                                 },
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
@@ -228,9 +242,9 @@ class _LoginPageState extends State<LoginPage>
                                         strokeWidth: 2.5,
                                       ),
                                     )
-                                  : const Text(
-                                      'Sign In',
-                                      style: TextStyle(
+                                  : Text(
+                                      _isSignUp ? 'Create Account' : 'Sign In',
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 16,
                                         fontWeight: FontWeight.w700,
@@ -244,54 +258,58 @@ class _LoginPageState extends State<LoginPage>
                     ),
                     const SizedBox(height: 32),
 
-                    // Divider
-                    Row(
-                      children: [
-                        const Expanded(
-                          child: Divider(color: AppColors.cardBorder),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'or continue with',
-                            style: TextStyle(
-                              color: AppColors.textTertiary,
-                              fontSize: 13,
+                    if (!_isSignUp) ...[
+                      // Divider
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Divider(color: AppColors.cardBorder),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'or continue with',
+                              style: TextStyle(
+                                color: AppColors.textTertiary,
+                                fontSize: 13,
+                              ),
                             ),
                           ),
-                        ),
-                        const Expanded(
-                          child: Divider(color: AppColors.cardBorder),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
+                          const Expanded(
+                            child: Divider(color: AppColors.cardBorder),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                    ],
 
                     // Social buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _SocialButton(
-                            icon: Icons.g_mobiledata_rounded,
-                            label: 'Google',
-                            onTap: () => context
-                                .read<AuthBloc>()
-                                .add(const AuthGoogleLoginRequested()),
+                    if (!_isSignUp) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _SocialButton(
+                              icon: Icons.g_mobiledata_rounded,
+                              label: 'Google',
+                              onTap: () => context
+                                  .read<AuthBloc>()
+                                  .add(const AuthGoogleLoginRequested()),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _SocialButton(
-                            icon: Icons.apple,
-                            label: 'Apple',
-                            onTap: () => context
-                                .read<AuthBloc>()
-                                .add(const AuthAppleLoginRequested()),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _SocialButton(
+                              icon: Icons.apple,
+                              label: 'Apple',
+                              onTap: () => context
+                                  .read<AuthBloc>()
+                                  .add(const AuthAppleLoginRequested()),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 40),
+                        ],
+                      ),
+                      const SizedBox(height: 40),
+                    ],
 
                     // Sign up
                     Center(
@@ -299,16 +317,19 @@ class _LoginPageState extends State<LoginPage>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            "Don't have an account? ",
+                            _isSignUp
+                                ? 'Already have an account? '
+                                : "Don't have an account? ",
                             style: TextStyle(
                               color: AppColors.textTertiary,
                               fontSize: 14,
                             ),
                           ),
                           GestureDetector(
-                            onTap: () {},
-                            child: const Text(
-                              'Sign Up',
+                            onTap: () =>
+                                setState(() => _isSignUp = !_isSignUp),
+                            child: Text(
+                              _isSignUp ? 'Sign In' : 'Sign Up',
                               style: TextStyle(
                                 color: AppColors.primary,
                                 fontSize: 14,

@@ -5,26 +5,34 @@ enum AuthStatus { unknown, authenticated, unauthenticated, loading, error }
 class AuthState extends Equatable {
   final AuthStatus status;
   final String? errorMessage;
-  final String? userName;
+  final String? displayName;
+  final String? email;
 
   const AuthState({
     this.status = AuthStatus.unknown,
     this.errorMessage,
-    this.userName,
+    this.displayName,
+    this.email,
   });
 
   AuthState copyWith({
     AuthStatus? status,
     String? errorMessage,
-    String? userName,
+    String? displayName,
+    String? email,
+    bool clearErrorMessage = false,
+    bool clearUserInfo = false,
   }) {
     return AuthState(
       status: status ?? this.status,
-      errorMessage: errorMessage ?? this.errorMessage,
-      userName: userName ?? this.userName,
+      errorMessage: clearErrorMessage
+          ? null
+          : (errorMessage ?? this.errorMessage),
+      displayName: clearUserInfo ? null : (displayName ?? this.displayName),
+      email: clearUserInfo ? null : (email ?? this.email),
     );
   }
 
   @override
-  List<Object?> get props => [status, errorMessage, userName];
+  List<Object?> get props => [status, errorMessage, displayName, email];
 }

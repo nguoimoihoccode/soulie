@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../home/presentation/pages/home_page.dart';
 import '../../../friends/presentation/pages/friends_page.dart';
 import '../../../chat/presentation/pages/chat_list_page.dart';
 import '../widgets/camera_history_page.dart';
 
 /// Main page uses PageView like Locket:
-/// Horizontal: Friends ← Camera → Messages
+/// Horizontal: Home ← Friends ← Camera → Messages
 /// Vertical (on Camera): swipe DOWN → History
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -15,12 +16,12 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   late final PageController _pageController;
-  int _currentPage = 1; // Start at Camera (center)
+  int _currentPage = 2; // Start at Camera (center)
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: 1);
+    _pageController = PageController(initialPage: 2);
   }
 
   @override
@@ -34,18 +35,20 @@ class _MainPageState extends State<MainPage> {
     return Scaffold(
       body: Stack(
         children: [
-          // Horizontal swipe: Friends ←→ Camera+History ←→ Messages
+          // Horizontal swipe: Home ←→ Friends ←→ Camera+History ←→ Messages
           PageView(
             controller: _pageController,
             onPageChanged: (index) {
               setState(() => _currentPage = index);
             },
             children: const [
+              // Page 0: Home
+              HomePage(),
               // Page 0: Friends (swipe left)
               FriendsPage(),
-              // Page 1: Camera (top) + History (swipe down)
+              // Page 2: Camera (top) + History (swipe down)
               CameraHistoryPage(),
-              // Page 2: Messages (swipe right)
+              // Page 3: Messages (swipe right)
               ChatListPage(),
             ],
           ),
@@ -57,7 +60,7 @@ class _MainPageState extends State<MainPage> {
             right: 0,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(3, (index) {
+              children: List.generate(4, (index) {
                 final isActive = index == _currentPage;
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 250),

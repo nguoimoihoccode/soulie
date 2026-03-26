@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/services/home_widget_sync_service.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../soulie/data/soulie_repository.dart';
 import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
 import '../bloc/home_state.dart';
@@ -14,7 +17,10 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => HomeBloc()..add(const HomeLoadRequested()),
+      create: (_) => HomeBloc(
+        soulieRepository: context.read<SoulieRepository>(),
+        homeWidgetSyncService: context.read<HomeWidgetSyncService>(),
+      )..add(const HomeLoadRequested()),
       child: const _HomeView(),
     );
   }
@@ -35,6 +41,23 @@ class _HomeView extends StatelessWidget {
               child: CircularProgressIndicator(color: AppColors.primary),
             );
           }
+
+          if (state.status == HomeStatus.error &&
+              state.recentlyShared.isEmpty &&
+              state.friendsGrid.isEmpty) {
+            return Center(
+              child: Text(
+                state.errorMessage ?? 'Không thể tải trang chủ',
+                style: TextStyle(
+                  color: AppColors.textTertiary.withValues(alpha: 0.8),
+                ),
+              ),
+            );
+          }
+
+          final leadActivity = state.recentlyShared.isNotEmpty
+              ? state.recentlyShared.first
+              : null;
 
           return CustomScrollView(
             physics: const BouncingScrollPhysics(),
@@ -73,23 +96,42 @@ class _HomeView extends StatelessWidget {
                 ),
                 actions: [
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () => context.push('/main/profile'),
                     icon: Stack(
+                      clipBehavior: Clip.none,
                       children: [
-                        const Icon(Icons.notifications_outlined,
-                            color: AppColors.textSecondary),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: AppColors.accentPink,
-                              shape: BoxShape.circle,
+                        const Icon(
+                          Icons.notifications_outlined,
+                          color: AppColors.textSecondary,
+                        ),
+                        if (state.notificationCount > 0)
+                          Positioned(
+                            right: -4,
+                            top: -2,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 1,
+                              ),
+                              decoration: const BoxDecoration(
+                                color: AppColors.accentPink,
+                                shape: BoxShape.rectangle,
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(10),
+                                ),
+                              ),
+                              child: Text(
+                                state.notificationCount > 99
+                                    ? '99+'
+                                    : state.notificationCount.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -104,18 +146,23 @@ class _HomeView extends StatelessWidget {
                   delegate: SliverChildListDelegate([
                     const SizedBox(height: 8),
                     // Recently Shared
-                    RecentlySharedSection(
-                      friends: state.recentlyShared,
-                    ),
+                    RecentlySharedSection(friends: state.recentlyShared),
                     const SizedBox(height: 24),
                     // Friends Grid
                     FriendsGridSection(
                       friends: state.friendsGrid,
+                      onFriendTap: (friend) => context.pushNamed(
+                        'chat',
+                        pathParameters: {'friendKey': friend.id},
+                        queryParameters: {'name': friend.name},
+                      ),
                     ),
                     const SizedBox(height: 24),
                     // Live Feed
                     LiveFeedCard(
                       message: state.liveFeedMessage ?? '',
+                      friendName: leadActivity?.name ?? 'Soulie',
+                      timeAgo: leadActivity?.timeAgo ?? 'Just now',
                     ),
                     const SizedBox(height: 120),
                   ]),

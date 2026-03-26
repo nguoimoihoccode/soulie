@@ -7,10 +7,11 @@ abstract class ChatEvent extends Equatable {
 }
 
 class ChatLoadRequested extends ChatEvent {
-  final String friendName;
-  const ChatLoadRequested(this.friendName);
+  final String friendKey;
+  final String initialFriendName;
+  const ChatLoadRequested(this.friendKey, {this.initialFriendName = ''});
   @override
-  List<Object?> get props => [friendName];
+  List<Object?> get props => [friendKey, initialFriendName];
 }
 
 class ChatMessageSent extends ChatEvent {

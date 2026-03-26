@@ -3,8 +3,15 @@ import '../../../../core/theme/app_colors.dart';
 
 class LiveFeedCard extends StatelessWidget {
   final String message;
+  final String friendName;
+  final String timeAgo;
 
-  const LiveFeedCard({super.key, required this.message});
+  const LiveFeedCard({
+    super.key,
+    required this.message,
+    required this.friendName,
+    required this.timeAgo,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -52,12 +59,12 @@ class LiveFeedCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Sarah Chen',
+                          friendName,
                           style: TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: 15,
@@ -65,7 +72,7 @@ class LiveFeedCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'Just now',
+                          timeAgo,
                           style: TextStyle(
                             color: AppColors.textTertiary,
                             fontSize: 12,

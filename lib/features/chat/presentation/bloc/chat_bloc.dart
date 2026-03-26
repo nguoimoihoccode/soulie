@@ -1,12 +1,17 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../soulie/data/soulie_repository.dart';
 import 'chat_event.dart';
 import 'chat_state.dart';
 
 class ChatBloc extends Bloc<ChatEvent, ChatState> {
-  ChatBloc() : super(const ChatState()) {
+  ChatBloc({required SoulieRepository soulieRepository})
+    : _soulieRepository = soulieRepository,
+      super(const ChatState()) {
     on<ChatLoadRequested>(_onLoad);
     on<ChatMessageSent>(_onSend);
   }
+
+  final SoulieRepository _soulieRepository;
 
   Future<void> _onLoad(
     ChatLoadRequested event,
@@ -14,33 +19,92 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   ) async {
     emit(state.copyWith(
       status: ChatStatus.loading,
-      friendName: event.friendName,
+      friendKey: event.friendKey,
+      friendName: event.initialFriendName,
+      clearErrorMessage: true,
     ));
-    await Future.delayed(const Duration(milliseconds: 400));
-    emit(state.copyWith(
-      status: ChatStatus.loaded,
-      messages: _mockMessages(event.friendName),
-    ));
+
+    try {
+      final conversationId = await _soulieRepository.openDirectConversation(
+        event.friendKey,
+      );
+      final thread = await _soulieRepository.fetchConversationThread(
+        conversationId,
+      );
+      await _soulieRepository.markConversationRead(conversationId);
+      emit(state.copyWith(
+        status: ChatStatus.loaded,
+        conversationId: thread.conversationId,
+        friendName: thread.friend.name,
+        friendStatus: thread.friend.status,
+        messages: thread.messages
+            .map(
+              (message) => ChatMessage(
+                text: message.text,
+                isMe: message.isMe,
+                time: message.time,
+                type: _mapMessageType(message.type),
+              ),
+            )
+            .toList(growable: false),
+      ));
+    } on SoulieRepositoryException catch (error) {
+      emit(state.copyWith(
+        status: ChatStatus.error,
+        errorMessage: error.message,
+      ));
+    } catch (_) {
+      emit(state.copyWith(
+        status: ChatStatus.error,
+        errorMessage: 'Không thể tải cuộc trò chuyện',
+      ));
+    }
   }
 
-  void _onSend(ChatMessageSent event, Emitter<ChatState> emit) {
-    final newMessage = ChatMessage(
-      text: event.message,
-      isMe: true,
-      time: 'Just now',
-    );
-    emit(state.copyWith(messages: [...state.messages, newMessage]));
+  Future<void> _onSend(ChatMessageSent event, Emitter<ChatState> emit) async {
+    if (state.conversationId.isEmpty) {
+      return;
+    }
+
+    try {
+      final message = await _soulieRepository.sendConversationMessage(
+        conversationId: state.conversationId,
+        message: event.message,
+      );
+      emit(state.copyWith(
+        status: ChatStatus.loaded,
+        messages: [
+          ...state.messages,
+          ChatMessage(
+            text: message.text,
+            isMe: message.isMe,
+            time: message.time,
+            type: _mapMessageType(message.type),
+          ),
+        ],
+        clearErrorMessage: true,
+      ));
+    } on SoulieRepositoryException catch (error) {
+      emit(state.copyWith(
+        status: ChatStatus.error,
+        errorMessage: error.message,
+      ));
+    } catch (_) {
+      emit(state.copyWith(
+        status: ChatStatus.error,
+        errorMessage: 'Không thể gửi tin nhắn',
+      ));
+    }
   }
 
-  List<ChatMessage> _mockMessages(String name) {
-    return [
-      ChatMessage(text: 'Hey! 👋', isMe: false, time: '2:30 PM'),
-      ChatMessage(text: 'Hiii! How are you?', isMe: true, time: '2:31 PM'),
-      ChatMessage(text: 'I\'m great! Check this out', isMe: false, time: '2:32 PM'),
-      ChatMessage(text: '📸', isMe: false, time: '2:32 PM', type: MessageType.photo),
-      ChatMessage(text: 'Omg that\'s amazing! 🔥', isMe: true, time: '2:33 PM'),
-      ChatMessage(text: '❤️', isMe: true, time: '2:33 PM', type: MessageType.reaction),
-      ChatMessage(text: 'Thanks!! Miss you 💕', isMe: false, time: '2:34 PM'),
-    ];
+  MessageType _mapMessageType(String type) {
+    switch (type) {
+      case 'photo':
+        return MessageType.photo;
+      case 'reaction':
+        return MessageType.reaction;
+      default:
+        return MessageType.text;
+    }
   }
 }

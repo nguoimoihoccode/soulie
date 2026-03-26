@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
+import '../../../soulie/data/soulie_repository.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
@@ -13,7 +14,9 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ProfileBloc()..add(const ProfileLoadRequested()),
+      create: (_) => ProfileBloc(
+        soulieRepository: context.read<SoulieRepository>(),
+      )..add(const ProfileLoadRequested()),
       child: const _ProfileView(),
     );
   }
@@ -35,10 +38,7 @@ class _ProfileView extends StatelessWidget {
         ),
         title: const Text(
           'Profile',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
         ),
         centerTitle: true,
       ),
@@ -49,6 +49,32 @@ class _ProfileView extends StatelessWidget {
               child: CircularProgressIndicator(color: AppColors.primary),
             );
           }
+
+          if (state.status == ProfileStatus.error) {
+            return Center(
+              child: Text(
+                state.errorMessage ?? 'Không thể tải hồ sơ',
+                style: TextStyle(
+                  color: AppColors.textTertiary.withValues(alpha: 0.8),
+                ),
+              ),
+            );
+          }
+
+          final authState = context.watch<AuthBloc>().state;
+          final displayName = state.displayName.trim().isNotEmpty
+              ? state.displayName.trim()
+              : (authState.displayName?.trim().isNotEmpty == true
+                    ? authState.displayName!.trim()
+                    : '');
+          final username = state.username.trim().isNotEmpty
+              ? _formatUsername(state.username)
+              : (authState.email?.trim().isNotEmpty == true
+                    ? '@${authState.email!.split('@').first}'
+                    : '');
+          final avatarText = displayName.isNotEmpty
+              ? displayName.characters.first.toUpperCase()
+              : 'S';
 
           return SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -72,9 +98,9 @@ class _ProfileView extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
-                      'A',
+                      avatarText,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 40,
@@ -87,7 +113,7 @@ class _ProfileView extends StatelessWidget {
 
                 // Name
                 Text(
-                  state.displayName,
+                  displayName,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 24,
@@ -96,7 +122,7 @@ class _ProfileView extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  state.username,
+                  username,
                   style: const TextStyle(
                     color: AppColors.textTertiary,
                     fontSize: 15,
@@ -106,7 +132,10 @@ class _ProfileView extends StatelessWidget {
 
                 // Stats row
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 20,
+                    horizontal: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.cardDark,
                     borderRadius: BorderRadius.circular(20),
@@ -116,15 +145,19 @@ class _ProfileView extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _StatColumn(
-                          value: state.totalSent.toString(), label: 'Sent'),
+                        value: state.totalSent.toString(),
+                        label: 'Sent',
+                      ),
                       _divider(),
                       _StatColumn(
-                          value: state.totalReceived.toString(),
-                          label: 'Received'),
+                        value: state.totalReceived.toString(),
+                        label: 'Received',
+                      ),
                       _divider(),
                       _StatColumn(
-                          value: state.friendCount.toString(),
-                          label: 'Friends'),
+                        value: state.friendCount.toString(),
+                        label: 'Friends',
+                      ),
                       _divider(),
                       _StatColumn(
                         value: '${state.streakDays}d',
@@ -140,27 +173,18 @@ class _ProfileView extends StatelessWidget {
                 _MenuItem(
                   icon: Icons.edit_outlined,
                   label: 'Edit Profile',
-                  onTap: () {},
+                  onTap: () => _showEditProfileSheet(context, state),
                 ),
                 _MenuItem(
                   icon: Icons.notifications_outlined,
                   label: 'Notifications',
-                  onTap: () {},
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Text(
-                      '3',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Thông báo mới hiển thị ở màn Home'),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
                 _MenuItem(
                   icon: Icons.lock_outline,
@@ -213,9 +237,9 @@ class _ProfileView extends StatelessWidget {
                           TextButton(
                             onPressed: () {
                               Navigator.pop(ctx);
-                              context
-                                  .read<AuthBloc>()
-                                  .add(const AuthLogoutRequested());
+                              context.read<AuthBloc>().add(
+                                const AuthLogoutRequested(),
+                              );
                             },
                             child: const Text(
                               'Logout',
@@ -272,6 +296,142 @@ class _ProfileView extends StatelessWidget {
   }
 }
 
+String _formatUsername(String username) {
+  final normalized = username.trim().replaceFirst('@', '');
+  if (normalized.isEmpty) {
+    return '';
+  }
+  return '@$normalized';
+}
+
+Future<void> _showEditProfileSheet(
+  BuildContext parentContext,
+  ProfileState state,
+) async {
+  final nameController = TextEditingController(text: state.displayName);
+  final usernameController = TextEditingController(
+    text: state.username.trim().replaceFirst('@', ''),
+  );
+
+  await showModalBottomSheet<void>(
+    context: parentContext,
+    isScrollControlled: true,
+    backgroundColor: AppColors.surfaceElevated,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (sheetContext) {
+      var isSaving = false;
+
+      return StatefulBuilder(
+        builder: (_, setModalState) {
+          Future<void> submit() async {
+            if (isSaving) {
+              return;
+            }
+
+            setModalState(() => isSaving = true);
+            try {
+              await parentContext.read<SoulieRepository>().updateProfile(
+                displayName: nameController.text.trim(),
+                username: usernameController.text.trim(),
+              );
+              if (!sheetContext.mounted) {
+                return;
+              }
+              Navigator.of(sheetContext).pop();
+              if (!parentContext.mounted) {
+                return;
+              }
+              parentContext.read<ProfileBloc>().add(const ProfileLoadRequested());
+              ScaffoldMessenger.of(parentContext).showSnackBar(
+                const SnackBar(content: Text('Đã cập nhật hồ sơ')),
+              );
+            } on SoulieRepositoryException catch (error) {
+              if (!sheetContext.mounted) {
+                return;
+              }
+              ScaffoldMessenger.of(sheetContext).showSnackBar(
+                SnackBar(content: Text(error.message)),
+              );
+              setModalState(() => isSaving = false);
+            } catch (_) {
+              if (!sheetContext.mounted) {
+                return;
+              }
+              ScaffoldMessenger.of(sheetContext).showSnackBar(
+                const SnackBar(content: Text('Không thể cập nhật hồ sơ')),
+              );
+              setModalState(() => isSaving = false);
+            }
+          }
+
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              20,
+              20,
+              MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Edit Profile',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _EditField(
+                  controller: nameController,
+                  label: 'Display name',
+                  hint: 'Your display name',
+                ),
+                const SizedBox(height: 12),
+                _EditField(
+                  controller: usernameController,
+                  label: 'Username',
+                  hint: 'username',
+                  prefixText: '@',
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isSaving ? null : submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: isSaving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Save Changes'),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
 class _StatColumn extends StatelessWidget {
   final String value;
   final String label;
@@ -309,13 +469,11 @@ class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final Widget? trailing;
 
   const _MenuItem({
     required this.icon,
     required this.label,
     required this.onTap,
-    this.trailing,
   });
 
   @override
@@ -326,9 +484,7 @@ class _MenuItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         margin: const EdgeInsets.only(bottom: 4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(14)),
         child: Row(
           children: [
             Container(
@@ -351,16 +507,64 @@ class _MenuItem extends StatelessWidget {
                 ),
               ),
             ),
-            ?trailing,
-            if (trailing == null)
-              Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textTertiary.withValues(alpha: 0.5),
-                size: 20,
-              ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textTertiary.withValues(alpha: 0.5),
+              size: 20,
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _EditField extends StatelessWidget {
+  const _EditField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    this.prefixText,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final String? prefixText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          style: const TextStyle(color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              color: AppColors.textTertiary.withValues(alpha: 0.6),
+            ),
+            prefixText: prefixText,
+            prefixStyle: const TextStyle(color: AppColors.textSecondary),
+            filled: true,
+            fillColor: AppColors.surfaceLight,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
