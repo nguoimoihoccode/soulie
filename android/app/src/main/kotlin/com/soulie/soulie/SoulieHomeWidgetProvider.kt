@@ -2,13 +2,13 @@ package com.soulie.soulie
 
 import android.content.Context
 import android.net.Uri
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
-import androidx.glance.LocalSize
 import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -30,6 +30,8 @@ import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.width
 import androidx.glance.layout.wrapContentHeight
+import androidx.glance.layout.wrapContentWidth
+import androidx.glance.layout.defaultWeight
 import androidx.glance.text.FontWeight
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
@@ -37,7 +39,11 @@ import es.antonborri.home_widget.HomeWidgetGlanceState
 import es.antonborri.home_widget.HomeWidgetGlanceStateDefinition
 
 class SoulieHomeWidgetProvider : GlanceAppWidgetReceiver() {
-    override val glanceAppWidget: GlanceAppWidget = SoulieHomeWidget()
+    override val glanceAppWidget: GlanceAppWidget = SoulieMediumWidget()
+}
+
+class SoulieSmallWidgetProvider : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = SoulieSmallWidget()
 }
 
 private data class SoulieWidgetData(
@@ -49,37 +55,51 @@ private data class SoulieWidgetData(
     val notificationCount: Int,
 )
 
-class SoulieHomeWidget : GlanceAppWidget() {
+private abstract class BaseSoulieWidget : GlanceAppWidget() {
     override val stateDefinition = HomeWidgetGlanceStateDefinition()
 
-    override suspend fun provideGlance(context: Context, id: androidx.glance.GlanceId) {
+    final override suspend fun provideGlance(context: Context, id: androidx.glance.GlanceId) {
         provideContent {
-            val state = currentState<HomeWidgetGlanceState>()
-            val prefs = state.preferences
-            val data = SoulieWidgetData(
-                title = prefs.getString("title", "Soulie") ?: "Soulie",
-                subtitle = prefs.getString("subtitle", "Your private photo pulse")
-                    ?: "Your private photo pulse",
-                highlight = prefs.getString("highlight", "Share a tiny window into your day.")
-                    ?: "Share a tiny window into your day.",
-                friends = prefs.getString("friends", "Open Soulie to reconnect.")
-                    ?: "Open Soulie to reconnect.",
-                imagePath = prefs.getString("soulie_widget_image", null),
-                notificationCount = prefs.getInt("notificationCount", 0),
-            )
-            val size = LocalSize.current
-            val useMediumLayout = size.width >= 220.dp || size.height >= 220.dp
-
-            if (useMediumLayout) {
-                MediumWidgetLayout(data = data)
-            } else {
-                SmallWidgetLayout(data = data)
-            }
+            renderWidget(data = currentWidgetData())
         }
+    }
+
+    @Composable
+    abstract fun renderWidget(data: SoulieWidgetData)
+}
+
+class SoulieSmallWidget : BaseSoulieWidget() {
+    @Composable
+    override fun renderWidget(data: SoulieWidgetData) {
+        SmallWidgetLayout(data = data)
     }
 }
 
-@androidx.compose.runtime.Composable
+class SoulieMediumWidget : BaseSoulieWidget() {
+    @Composable
+    override fun renderWidget(data: SoulieWidgetData) {
+        MediumWidgetLayout(data = data)
+    }
+}
+
+@Composable
+private fun currentWidgetData(): SoulieWidgetData {
+    val state = currentState<HomeWidgetGlanceState>()
+    val prefs = state.preferences
+    return SoulieWidgetData(
+        title = prefs.getString("title", "Soulie") ?: "Soulie",
+        subtitle = prefs.getString("subtitle", "Your private photo pulse")
+            ?: "Your private photo pulse",
+        highlight = prefs.getString("highlight", "Share a tiny window into your day.")
+            ?: "Share a tiny window into your day.",
+        friends = prefs.getString("friends", "Open Soulie to reconnect.")
+            ?: "Open Soulie to reconnect.",
+        imagePath = prefs.getString("soulie_widget_image", null),
+        notificationCount = prefs.getInt("notificationCount", 0),
+    )
+}
+
+@Composable
 private fun SmallWidgetLayout(data: SoulieWidgetData) {
     val title = if (data.highlight.isNotBlank()) data.highlight else data.subtitle
     val footer = if (data.friends.isNotBlank()) data.friends else "Tap to open messages"
@@ -133,7 +153,7 @@ private fun SmallWidgetLayout(data: SoulieWidgetData) {
     }
 }
 
-@androidx.compose.runtime.Composable
+@Composable
 private fun MediumWidgetLayout(data: SoulieWidgetData) {
     Box(
         modifier = widgetContainer()
@@ -251,7 +271,7 @@ private fun MediumWidgetLayout(data: SoulieWidgetData) {
     }
 }
 
-@androidx.compose.runtime.Composable
+@Composable
 private fun PhotoBackground(data: SoulieWidgetData, overlayAlpha: Float) {
     Box(
         modifier = GlanceModifier
@@ -298,12 +318,12 @@ private fun PhotoBackground(data: SoulieWidgetData, overlayAlpha: Float) {
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(ColorProviderWithAlpha(overlayAlpha)),
+                .background(Color(0f, 0f, 0f, overlayAlpha)),
         ) {}
     }
 }
 
-@androidx.compose.runtime.Composable
+@Composable
 private fun LabelChip(text: String) {
     Box(
         modifier = GlanceModifier
@@ -324,7 +344,7 @@ private fun LabelChip(text: String) {
     }
 }
 
-@androidx.compose.runtime.Composable
+@Composable
 private fun UnreadBadge(count: Int) {
     Box(
         modifier = GlanceModifier
@@ -344,7 +364,7 @@ private fun UnreadBadge(count: Int) {
     }
 }
 
-@androidx.compose.runtime.Composable
+@Composable
 private fun FriendChip(name: String) {
     Row(
         modifier = GlanceModifier
@@ -400,8 +420,4 @@ private fun friendNames(data: SoulieWidgetData): List<String> {
         .filter { it.isNotEmpty() }
         .take(3)
         .ifEmpty { listOf("Soulie", "Friends") }
-}
-
-private fun ColorProviderWithAlpha(alpha: Float): Color {
-    return Color(0f, 0f, 0f, alpha)
 }

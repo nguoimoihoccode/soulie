@@ -22,32 +22,37 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   ) async {
     try {
       final recipients = await _soulieRepository.fetchCameraRecipients();
-      emit(state.copyWith(
-        status: CameraStatus.ready,
-        recipients: recipients
-            .map(
-              (recipient) => CameraRecipient(
-                id: recipient.id,
-                name: recipient.name,
-                avatarUrl: recipient.avatarUrl,
-                isGroup: recipient.isGroup,
-                isOnline: recipient.isOnline,
-              ),
-            )
-            .toList(growable: false),
-        selectedRecipientId: recipients.isEmpty ? 'all-friends' : recipients.first.id,
-        clearErrorMessage: true,
-      ));
+      emit(
+        state.copyWith(
+          status: CameraStatus.ready,
+          recipients: recipients
+              .map(
+                (recipient) => CameraRecipient(
+                  id: recipient.id,
+                  name: recipient.name,
+                  avatarUrl: recipient.avatarUrl,
+                  isGroup: recipient.isGroup,
+                  isOnline: recipient.isOnline,
+                ),
+              )
+              .toList(growable: false),
+          selectedRecipientId: recipients.isEmpty
+              ? 'all-friends'
+              : recipients.first.id,
+          clearErrorMessage: true,
+        ),
+      );
     } on SoulieRepositoryException catch (error) {
-      emit(state.copyWith(
-        status: CameraStatus.error,
-        errorMessage: error.message,
-      ));
+      emit(
+        state.copyWith(status: CameraStatus.error, errorMessage: error.message),
+      );
     } catch (_) {
-      emit(state.copyWith(
-        status: CameraStatus.error,
-        errorMessage: 'Không thể tải danh sách người nhận',
-      ));
+      emit(
+        state.copyWith(
+          status: CameraStatus.error,
+          errorMessage: 'Không thể tải danh sách người nhận',
+        ),
+      );
     }
   }
 
@@ -55,25 +60,46 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     CameraCaptureTapped event,
     Emitter<CameraState> emit,
   ) async {
-    emit(state.copyWith(status: CameraStatus.capturing, clearErrorMessage: true));
+    emit(
+      state.copyWith(
+        status: CameraStatus.capturing,
+        capturedImagePath: event.imagePath,
+        clearErrorMessage: true,
+      ),
+    );
     try {
-      await Future.delayed(const Duration(milliseconds: 300));
       await _soulieRepository.createMoment(
         recipientIds: [state.selectedRecipientId],
       );
-      emit(state.copyWith(status: CameraStatus.captured));
-      await Future.delayed(const Duration(milliseconds: 500));
-      emit(state.copyWith(status: CameraStatus.ready));
+      emit(
+        state.copyWith(
+          status: CameraStatus.captured,
+          capturedImagePath: event.imagePath,
+        ),
+      );
+      await Future.delayed(const Duration(milliseconds: 700));
+      emit(
+        state.copyWith(
+          status: CameraStatus.ready,
+          clearCapturedImagePath: true,
+        ),
+      );
     } on SoulieRepositoryException catch (error) {
-      emit(state.copyWith(
-        status: CameraStatus.error,
-        errorMessage: error.message,
-      ));
+      emit(
+        state.copyWith(
+          status: CameraStatus.error,
+          capturedImagePath: event.imagePath,
+          errorMessage: error.message,
+        ),
+      );
     } catch (_) {
-      emit(state.copyWith(
-        status: CameraStatus.error,
-        errorMessage: 'Không thể gửi moment',
-      ));
+      emit(
+        state.copyWith(
+          status: CameraStatus.error,
+          capturedImagePath: event.imagePath,
+          errorMessage: 'Không thể gửi moment',
+        ),
+      );
     }
   }
 

@@ -10,7 +10,8 @@ class HomeWidgetSyncService {
   const HomeWidgetSyncService();
 
   static const String iOSAppGroupId = 'group.com.soulie.soulie';
-  static const String androidProviderName = 'SoulieHomeWidgetProvider';
+  static const String androidMediumProviderName = 'SoulieHomeWidgetProvider';
+  static const String androidSmallProviderName = 'SoulieSmallWidgetProvider';
   static const String iOSWidgetName = 'SoulieHomeWidget';
   static const String imageKey = 'soulie_widget_image';
 
@@ -66,11 +67,17 @@ class HomeWidgetSyncService {
       logicalSize: const Size(320, 320),
     );
 
-    await HomeWidget.updateWidget(
-      name: androidProviderName,
-      androidName: androidProviderName,
-      iOSName: iOSWidgetName,
-    );
+    await Future.wait([
+      HomeWidget.updateWidget(
+        name: androidSmallProviderName,
+        androidName: androidSmallProviderName,
+      ),
+      HomeWidget.updateWidget(
+        name: androidMediumProviderName,
+        androidName: androidMediumProviderName,
+        iOSName: iOSWidgetName,
+      ),
+    ]);
   }
 
   bool get _isSupportedPlatform =>

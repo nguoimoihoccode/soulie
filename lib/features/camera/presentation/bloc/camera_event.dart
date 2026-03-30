@@ -11,7 +11,12 @@ class CameraInitRequested extends CameraEvent {
 }
 
 class CameraCaptureTapped extends CameraEvent {
-  const CameraCaptureTapped();
+  final String imagePath;
+
+  const CameraCaptureTapped(this.imagePath);
+
+  @override
+  List<Object?> get props => [imagePath];
 }
 
 class CameraRecipientSelected extends CameraEvent {

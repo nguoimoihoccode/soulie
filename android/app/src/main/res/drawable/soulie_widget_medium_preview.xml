@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="28dp" />
+            <gradient
+                android:angle="315"
+                android:endColor="#120F17"
+                android:startColor="#201628" />
+        </shape>
+    </item>
+    <item android:left="0dp" android:top="0dp" android:right="142dp" android:bottom="0dp">
+        <shape android:shape="rectangle">
+            <corners android:topLeftRadius="28dp" android:bottomLeftRadius="28dp" />
+            <gradient android:angle="315" android:startColor="#2A1D33" android:endColor="#6A3652" />
+        </shape>
+    </item>
+    <item android:gravity="top|start" android:left="16dp" android:top="16dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="12dp" />
+            <size android:width="88dp" android:height="26dp" />
+            <solid android:color="#36000000" />
+        </shape>
+    </item>
+    <item android:gravity="top|start" android:left="166dp" android:top="18dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="12dp" />
+            <size android:width="84dp" android:height="24dp" />
+            <solid android:color="#36000000" />
+        </shape>
+    </item>
+    <item android:gravity="top|start" android:left="180dp" android:top="24dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="4dp" />
+            <size android:width="54dp" android:height="4dp" />
+            <solid android:color="#F2FFFFFF" />
+        </shape>
+    </item>
+    <item android:gravity="top|start" android:left="180dp" android:top="32dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="4dp" />
+            <size android:width="32dp" android:height="4dp" />
+            <solid android:color="#CCFFFFFF" />
+        </shape>
+    </item>
+    <item android:gravity="top|end" android:right="16dp" android:top="18dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="13dp" />
+            <size android:width="36dp" android:height="24dp" />
+            <solid android:color="#FF85A2" />
+        </shape>
+    </item>
+    <item android:gravity="center_vertical|start" android:left="40dp">
+        <inset
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            android:drawable="@drawable/soulie_preview_brand_mark" />
+    </item>
+    <item android:gravity="top|start" android:left="166dp" android:right="24dp" android:top="60dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="9dp" />
+            <size android:height="16dp" />
+            <solid android:color="#FFFFBCD0" />
+        </shape>
+    </item>
+    <item android:gravity="top|start" android:left="166dp" android:right="24dp" android:top="86dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="10dp" />
+            <size android:height="22dp" />
+            <solid android:color="#FFFFFFFF" />
+        </shape>
+    </item>
+    <item android:gravity="top|start" android:left="166dp" android:right="48dp" android:top="116dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="10dp" />
+            <size android:height="22dp" />
+            <solid android:color="#F2FFFFFF" />
+        </shape>
+    </item>
+    <item android:gravity="bottom|start" android:left="166dp" android:right="32dp" android:bottom="56dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="12dp" />
+            <size android:height="24dp" />
+            <solid android:color="#24FFFFFF" />
+        </shape>
+    </item>
+    <item android:gravity="bottom|start" android:left="176dp" android:bottom="62dp">
+        <shape android:shape="oval">
+            <size android:width="12dp" android:height="12dp" />
+            <solid android:color="#FF85A2" />
+        </shape>
+    </item>
+    <item android:gravity="bottom|start" android:left="194dp" android:bottom="62dp">
+        <shape android:shape="oval">
+            <size android:width="12dp" android:height="12dp" />
+            <solid android:color="#FFB6CB" />
+        </shape>
+    </item>
+    <item android:gravity="bottom|start" android:left="212dp" android:bottom="62dp">
+        <shape android:shape="oval">
+            <size android:width="12dp" android:height="12dp" />
+            <solid android:color="#FFFFFF" />
+        </shape>
+    </item>
+    <item android:gravity="bottom|start" android:left="166dp" android:right="46dp" android:bottom="24dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="8dp" />
+            <size android:height="16dp" />
+            <solid android:color="#D9FFFFFF" />
+        </shape>
+    </item>
+</layer-list>

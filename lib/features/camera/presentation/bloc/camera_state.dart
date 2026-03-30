@@ -49,26 +49,31 @@ class CameraState extends Equatable {
     String? selectedRecipientId,
     String? errorMessage,
     bool clearErrorMessage = false,
+    bool clearCapturedImagePath = false,
   }) {
     return CameraState(
       status: status ?? this.status,
       isFrontCamera: isFrontCamera ?? this.isFrontCamera,
       isFlashOn: isFlashOn ?? this.isFlashOn,
-      capturedImagePath: capturedImagePath ?? this.capturedImagePath,
+      capturedImagePath: clearCapturedImagePath
+          ? null
+          : (capturedImagePath ?? this.capturedImagePath),
       recipients: recipients ?? this.recipients,
       selectedRecipientId: selectedRecipientId ?? this.selectedRecipientId,
-      errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
+      errorMessage: clearErrorMessage
+          ? null
+          : (errorMessage ?? this.errorMessage),
     );
   }
 
   @override
   List<Object?> get props => [
-        status,
-        isFrontCamera,
-        isFlashOn,
-        capturedImagePath,
-        recipients,
-        selectedRecipientId,
-        errorMessage,
-      ];
+    status,
+    isFrontCamera,
+    isFlashOn,
+    capturedImagePath,
+    recipients,
+    selectedRecipientId,
+    errorMessage,
+  ];
 }

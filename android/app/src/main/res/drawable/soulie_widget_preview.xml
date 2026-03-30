@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="28dp" />
+            <gradient
+                android:angle="315"
+                android:endColor="#120F17"
+                android:startColor="#201628" />
+        </shape>
+    </item>
+
+    <item
+        android:gravity="top|start"
+        android:left="18dp"
+        android:top="18dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="14dp" />
+            <size
+                android:width="92dp"
+                android:height="28dp" />
+            <solid android:color="#36000000" />
+        </shape>
+    </item>
+
+    <item
+        android:gravity="top|end"
+        android:right="18dp"
+        android:top="18dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="14dp" />
+            <size
+                android:width="40dp"
+                android:height="28dp" />
+            <solid android:color="#FF85A2" />
+        </shape>
+    </item>
+
+    <item
+        android:gravity="center_horizontal|top"
+        android:left="18dp"
+        android:right="18dp"
+        android:top="58dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="22dp" />
+            <size android:height="132dp" />
+            <gradient
+                android:angle="315"
+                android:endColor="#6A3652"
+                android:startColor="#2A1D33" />
+        </shape>
+    </item>
+
+    <item
+        android:gravity="center_horizontal|top"
+        android:top="94dp">
+        <bitmap
+            android:gravity="center"
+            android:src="@mipmap/ic_launcher" />
+    </item>
+
+    <item
+        android:gravity="bottom|start"
+        android:left="18dp"
+        android:right="18dp"
+        android:bottom="48dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="10dp" />
+            <size android:height="22dp" />
+            <solid android:color="#FFFFFFFF" />
+        </shape>
+    </item>
+
+    <item
+        android:gravity="bottom|start"
+        android:left="18dp"
+        android:right="78dp"
+        android:bottom="20dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="8dp" />
+            <size android:height="16dp" />
+            <solid android:color="#D9FFFFFF" />
+        </shape>
+    </item>
+</layer-list>
